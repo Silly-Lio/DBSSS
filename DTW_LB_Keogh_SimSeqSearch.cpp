@@ -1,7 +1,16 @@
 /***********************************************************************/
 /************************* DISCLAIMER **********************************/
 /***********************************************************************/
-/** This UCR Suite software is copyright protected ?2012 by          **/
+/** This program is based on UCR Suite software, which is copyright   **/
+/** protected ?2012 by Thanawin Rakthanmanon, Bilson Campana,         **/
+/** Abdullah Mueen, Gustavo Batista and Eamonn Keogh.                 **/
+/**                                                                   **/
+/** Anyone use this software shall agree with the following terms.    **/
+/**                                                                   **/
+/**                                                                   **/
+/** The Original DISCLAIMER is:                                       **/
+/**                                                                   **/
+/** This UCR Suite software is copyright protected ?2012 by           **/
 /** Thanawin Rakthanmanon, Bilson Campana, Abdullah Mueen,            **/
 /** Gustavo Batista and Eamonn Keogh.                                 **/
 /**                                                                   **/
@@ -557,7 +566,7 @@ int main(  int argc , char *argv[] )
     /// Read query file
     double x, y;
     char *stringLine, *loc;
-    char row[4*5000*30]; //Ò»ĞĞËù°üº¬×Ö·û×î¶à ¸ö
+    char row[4*5000*30]; //ä¸€è¡Œæ‰€åŒ…å«å­—ç¬¦æœ€å¤š ä¸ª
     int offset;
     double xmean = 0, xstd = 0, ymean = 0, ystd = 0;
     double xmax = DBL_MIN, xmin = DBL_MAX, ymax = DBL_MIN, ymin = DBL_MAX;
@@ -621,8 +630,8 @@ int main(  int argc , char *argv[] )
             r = floor(R);
     }
 
-    ///del-¼ÆËãÆ´½ÓĞòÁĞµÄ
-    ////ÉÏ½çºÍÏÂ½ç
+    ///del-è®¡ç®—æ‹¼æ¥åºåˆ—çš„
+    ////ä¸Šç•Œå’Œä¸‹ç•Œ
     double* lb_q_x, * lb_q_y, * ub_q_x, * ub_q_y, * lb_t_x, * lb_t_y, * ub_t_x, * ub_t_y;
 
     lb_q_x = (double*)malloc(sizeof(double) * m);
@@ -688,7 +697,7 @@ int main(  int argc , char *argv[] )
             Q_tmp[scanned].value = sqrt(dist);
             
         } else {
-            //Ë÷ÒıÌõ¼ş
+            //ç´¢å¼•æ¡ä»¶
             
             if (scanned < 0) {
                 printf("variable <scanned> ERROR.");
@@ -708,8 +717,8 @@ int main(  int argc , char *argv[] )
             else {
                 lb_keogh1 = lb_keogh_cumulative(X_t, Y_t, ub_q_x, ub_q_y, lb_q_x, lb_q_y, min(len_Q, len_T), topkdtw->dist_1d);
                 if (lb_keogh1 < topkdtw->dist_1d) {
-                    ///¼ÆËãÄ¿±êĞòÁĞX/YĞòÁĞµÄ
-                    ////ÉÏ½çºÍÏÂ½ç
+                    ///è®¡ç®—ç›®æ ‡åºåˆ—X/Yåºåˆ—çš„
+                    ////ä¸Šç•Œå’Œä¸‹ç•Œ
                     lower_upper_lemire(X_t, len_T, r, lb_t_x, ub_t_x);
                     lower_upper_lemire(Y_t, len_T, r, lb_t_y, ub_t_y);
 
