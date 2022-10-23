@@ -1,55 +1,37 @@
--- 757 北京西站
--- 60 527 525 526 三里屯
--- 84 天安门
--- 1565 1566 永定河水库
--- 657 660 望京
--- 669 朝阳公园
--- 924 天通苑
+WITH target_taz AS ( -- 0. 表格生成与存储
+					SELECT *
+					FROM trajs trajs
+					WHERE trajs.tazid = {target_tazid}
+			), 
+			cp_dist AS (
+					SELECT matchtrajs.tazid
+					FROM (  SELECT * 
+									FROM cp_trajs
+									WHERE tazid = {target_tazid}) target, 
+					LATERAL (SELECT *
+									 FROM cp_trajs cp_trajs
+									 ORDER BY target.geom <-> cp_trajs.geom ASC 
+									 LIMIT {k*5}) as matchtrajs
+			), table_cp_dist AS (
+					SELECT trajs.*
+					FROM cp_dist 
+					INNER JOIN trajs trajs 
+					ON cp_dist.tazid = trajs.tazid -- ORDER BY st_centroid(target.geom) <-> st_centroid(trajs.geom) ASC 
+			),
 
--- 自定义参数
--- {dataset} 被查找的集合名称
--- {target_tazid} 查询序列的ID
--- {k} 查找数量
+			table_area AS ( -- 2. 多边形面积
+					SELECT trajs.tazid, trajs.geom
+					FROM table_cp_dist trajs, target_taz target
+					ORDER BY ABS(st_area(st_envelope(target.geom)) - st_area(st_envelope(trajs.geom))) ASC 
+					LIMIT {k*2}
+			), 
 
-
-WITH target_taz AS ( -- 1. 获取查询序列的对应轨迹
-		SELECT *
-		FROM {dataset} pt
-		WHERE pt.tazid = {target_tazid}
-	), 
-
-	traj_cp AS ( -- 2. 获取查询轨迹中心点
-		SELECT *, st_centroid(geom) AS cp
-		FROM {dataset} pt
-	), 
-	taz_std AS ( -- 3. 对查询轨迹进行平移与缩放，相当于对原始的时间序列进行z-score标准化
-		SELECT tazid, st_scale(st_translate(geom, st_x(cp), st_y(cp)), std_x, std_y) AS geom
-		FROM traj_cp
-	), 
-	target_cp AS ( -- 4. 获取全数据集所包含轨迹的中心点
-		SELECT *, st_centroid(geom) AS cp
-		FROM target_taz
-	),
-	target_std AS ( -- 5. 对全数据集的轨迹进行平移与缩放，相当于对原始的时间序列进行z-score标准化
-		SELECT tazid, st_scale(st_translate(geom, st_x(cp), st_y(cp)), std_x, std_y) AS geom
-		FROM target_cp
-	),
-
-	table_area AS ( -- Filter1. 外包矩形的面积约束
-		SELECT taz_std.tazid, taz_std.geom, ABS(st_area(st_envelope(taz_std.geom))- st_area(st_envelope(target_std.geom))) AS diff_area
-		FROM taz_std
-		CROSS JOIN target_std
-		ORDER BY diff_area ASC
-		LIMIT {k*2}
-	), 
-
-	table_f_dist AS ( -- Filter2. Frechet 距离约束
-		SELECT table_area.tazid, table_area.geom
-		FROM table_area
-		CROSS JOIN target_std
-		ORDER BY st_frechetdistance(table_area.geom, target_std.geom) ASC
-		LIMIT {k} 
-	)
+			table_f_dist AS ( -- 3. Frechet 距离
+					SELECT trajs.tazid, trajs.geom
+					FROM table_area trajs, target_taz target
+					ORDER BY st_frechetdistance(target.geom, trajs.geom) ASC 
+					LIMIT {k}
+			)
 
 SELECT tazid
-FROM table_f_dist; 
+FROM table_f_dist;
