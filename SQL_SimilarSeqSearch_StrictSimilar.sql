@@ -1,6 +1,6 @@
 WITH target_taz AS ( -- 0. 表格生成与存储
 	SELECT *
-	FROM trajs trajs
+	FROM {dataset} trajs
 	WHERE trajs.tazid = {target_tazid}
      ), 
      cp_dist AS (
