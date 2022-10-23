@@ -65,7 +65,7 @@ typedef struct IndexDTW {
     int index;
     double dist;
     double dist_1d;
-    IndexDTW *next;
+    IndexDTW* next;
 }IndexDTW;
 
 struct deque
@@ -439,91 +439,93 @@ void AddData(IndexDTW** indexdtw, int index, double dist, double dist_1d, bool r
     p->next = new_indexdtw;
 
     if (replace) {
-        p = *indexdtw; 
+        p = *indexdtw;
         *indexdtw = p->next;
         free(p);
     }
 }
 
 /// Print function for debugging
-void printArray(double *x, int len)
-{   for(int i=0; i<len; i++)
-        printf(" %6.2lf",x[i]);
+void printArray(double* x, int len)
+{
+    for (int i = 0; i < len; i++)
+        printf(" %6.2lf", x[i]);
     printf("\n");
 }
 
 /// If expected error happens, teminated the program.
 void error(int id)
 {
-    if(id==1)
+    if (id == 1)
         printf("ERROR : Memory can't be allocated!!!\n\n");
-    else if ( id == 2 )
+    else if (id == 2)
         printf("ERROR : File not Found!!!\n\n");
-    else if ( id == 3 )
+    else if (id == 3)
         printf("ERROR : Can't create Output File!!!\n\n");
-    else if ( id == 4 )
+    else if (id == 4)
     {
         printf("ERROR : Invalid Number of Arguments!!!\n");
-        printf("Command Usage:  UCR_DTW.exe  file-path  data-file  query-file   m   R       topK  std (tag)\n\n");
-        printf("For example  :  UCR_DTW.exe  D:/        data.txt   query.txt   128  0.05    20    T/F (tag)\n");
+        printf("Command Usage:  UCR_DTW.exe  file-path  data-file  query-file   m   R       topK  std\n\n");
+        printf("For example  :  UCR_DTW.exe  /          data.txt   query.txt   128  0.05    20    T/F\n");
     }
     exit(1);
 }
 
-void standardize(double *&ary, double mean, double std, int m) {
+void standardize(double*& ary, double mean, double std, int m) {
     for (int i = 0; i < m; i++) ary[i] = (ary[i] - mean) / std;
 }
 
 /// Main Function
-int main(  int argc , char *argv[] )
+int main(int argc, char* argv[])
 {
-    FILE *fp;            /// data file pointer
-    FILE *qp;            /// query file pointer
+    FILE* fp;            /// data file pointer
+    FILE* qp;            /// query file pointer
 
-    double *X_t, *Y_t, *X_q, *Y_q; 
-    double dist = 0, dist_1d = 0; 
+    double* X_t, * Y_t, * X_q, * Y_q;
+    double dist = 0, dist_1d = 0;
     //double bsf = INF; 
     double lb_yi, lb_keogh1, lb_keogh2;
     int len_Q, len_T;
 
-    long long i , j, index;
-    int m=-1, r=-1, topK=-1;
-    double t1,t2;
+    long long i, j, index;
+    int m = -1, r = -1, topK = -1;
+    double t1, t2;
     bool isStd;
     Index* Q_tmp;
-    
+
     IndexDTW* topkdtw = (IndexDTW*)malloc(sizeof(IndexDTW));
-    
-    
+
+
     /// If not enough input, display an error.
-    if (argc<=4)
+    if (argc <= 4)
         error(4);
 
     /// read size of the query
-    if (argc>4)
+    if (argc > 4)
         m = atol(argv[4]);
 
     /// read warping windows
-    if (argc>4)
-    {   double R = atof(argv[5]);
-        if (R<=1)
-            r = floor(R*m);
+    if (argc > 4)
+    {
+        double R = atof(argv[5]);
+        if (R <= 1)
+            r = floor(R * m);
         else
             r = floor(R);
     }
-    
-    if (argc > 6) 
+
+    if (argc > 6)
         topK = atoi(argv[6]);
-    
+
     if (topK <= 0) {
         free(topkdtw);
     }
-    
+
     switch (argv[7][0])
     {
-    case 'T': 
+    case 'T':
     case 't': isStd = true; break;
-    case 'F': 
+    case 'F':
     case 'f': isStd = false; break;
     default:
         cout << "illegal option." << endl;
@@ -535,16 +537,16 @@ int main(  int argc , char *argv[] )
     dataFilePath += string(argv[2]);
     queryFilePath += string(argv[3]);
 
-    fp = fopen(dataFilePath.c_str(),"r");
-    if( fp == NULL )
+    fp = fopen(dataFilePath.c_str(), "r");
+    if (fp == NULL)
         error(2);
 
-    qp = fopen(queryFilePath.c_str(),"r");
-    if( qp == NULL )
+    qp = fopen(queryFilePath.c_str(), "r");
+    if (qp == NULL)
         error(2);
 
     /// malloc everything here
-    
+
     X_q = (double*)malloc(sizeof(double) * m);
     if (X_q == NULL)
         error(1);
@@ -557,16 +559,15 @@ int main(  int argc , char *argv[] )
     Y_t = (double*)malloc(sizeof(double) * m);
     if (Y_t == NULL)
         error(1);
-    
+
     Q_tmp = (Index*)malloc(sizeof(Index) * N_MAX_ROWS);
     if (Q_tmp == NULL)
         error(1);
 
-    // fscanf -> sscanf 
     /// Read query file
     double x, y;
-    char *stringLine, *loc;
-    char row[4*5000*30]; //一行所包含字符最多 个
+    char* stringLine, * loc;
+    char row[4 * 5000 * 30]; //the max number of characters in one row
     int offset;
     double xmean = 0, xstd = 0, ymean = 0, ystd = 0;
     double xmax = DBL_MIN, xmin = DBL_MAX, ymax = DBL_MIN, ymin = DBL_MAX;
@@ -574,8 +575,6 @@ int main(  int argc , char *argv[] )
     fscanf(qp, "%s\n", &row);
     stringLine = (char*)malloc(sizeof(char) * strlen(row));
     strncpy(stringLine, row, strlen(row));
-    // printf("%s", row);
-    // printf("%s", stringLine);
 
     i = 0;
     loc = stringLine; //save original pointer
@@ -591,17 +590,17 @@ int main(  int argc , char *argv[] )
         xmin = min(x, xmin);
         ymax = max(y, ymax);
         ymin = min(y, ymin);
-        
-        if(isStd){
+
+        if (isStd) {
             xmean += x;
             ymean += y;
             xstd += x * x;
             ystd += y * y;
         }
-        
+
         i++;
     }
-    
+
     len_Q = i;
     if (isStd) {
         xmean /= len_Q;
@@ -620,7 +619,7 @@ int main(  int argc , char *argv[] )
         ymin = (ymin - ymean) / ystd;
     }
     //free(loc);
-    
+
     if (argc > 5)
     {
         double R = atof(argv[5]);
@@ -630,8 +629,6 @@ int main(  int argc , char *argv[] )
             r = floor(R);
     }
 
-    ///del-计算拼接序列的
-    ////上界和下界
     double* lb_q_x, * lb_q_y, * ub_q_x, * ub_q_y, * lb_t_x, * lb_t_y, * ub_t_x, * ub_t_y;
 
     lb_q_x = (double*)malloc(sizeof(double) * m);
@@ -642,32 +639,32 @@ int main(  int argc , char *argv[] )
     ub_t_x = (double*)malloc(sizeof(double) * m);
     lb_t_y = (double*)malloc(sizeof(double) * m);
     ub_t_y = (double*)malloc(sizeof(double) * m);
-    
-    lower_upper_lemire(X_q, len_Q, r, lb_q_x, ub_q_x); 
+
+    lower_upper_lemire(X_q, len_Q, r, lb_q_x, ub_q_x);
     lower_upper_lemire(Y_q, len_Q, r, lb_q_y, ub_q_y);
 
     /// Read data file
-    int scanned = 0; 
+    int scanned = 0;
     int yic = 0, keogh1c = 0, keogh2c = 0, dtwc = 0;
-    
+
     while (fscanf(fp, "%s\n", &row) != EOF) {
-        
+
         stringLine = (char*)malloc(sizeof(char) * strlen(row));
-        
+
         strncpy(stringLine, row, strlen(row));
         i = 0;
-        loc = stringLine; 
-        
+        loc = stringLine;
+
         sscanf(stringLine, "%lld:%n", &index, &offset);
         stringLine = stringLine + offset;
         xmean = 0, xstd = 0, ymean = 0, ystd = 0;
         while (sscanf(stringLine, "(%lf,%lf)%n", &x, &y, &offset)) {
-            if ((offset < strlen(stringLine) - 1) && (i<= m-1)) stringLine = stringLine + offset;
+            if ((offset < strlen(stringLine) - 1) && (i <= m - 1)) stringLine = stringLine + offset;
             else break;
 
             X_t[i] = x;
             Y_t[i] = y;
-            
+
             if (isStd) {
                 xmean += x;
                 ymean += y;
@@ -688,17 +685,17 @@ int main(  int argc , char *argv[] )
             ystd = sqrt(ystd - ymean * ymean);
             standardize(X_t, xmean, xstd, i);
             standardize(Y_t, ymean, ystd, i);
-            
+
         }
 
         if (topK < 1) {
             Q_tmp[scanned].index = index;
-            dist = dtw(X_t, Y_t, X_q, Y_q, len_T, len_Q, r); 
+            dist = dtw(X_t, Y_t, X_q, Y_q, len_T, len_Q, r);
             Q_tmp[scanned].value = sqrt(dist);
-            
-        } else {
-            //索引条件
-            
+
+        }
+        else {
+            //indexing time series
             if (scanned < 0) {
                 printf("variable <scanned> ERROR.");
                 return 1;
@@ -713,12 +710,11 @@ int main(  int argc , char *argv[] )
                 dist = dtw(X_t, Y_t, X_q, Y_q, len_T, len_Q, r);
                 dist_1d = dtw(X_t, X_q, len_T, len_Q, r, INF) + dtw(Y_t, Y_q, len_T, len_Q, r, INF);
                 AddData(&topkdtw, index, dist, dist_1d, false);
-            } 
+            }
             else {
                 lb_keogh1 = lb_keogh_cumulative(X_t, Y_t, ub_q_x, ub_q_y, lb_q_x, lb_q_y, min(len_Q, len_T), topkdtw->dist_1d);
                 if (lb_keogh1 < topkdtw->dist_1d) {
-                    ///计算目标序列X/Y序列的
-                    ////上界和下界
+                    ///calculate the upper and lower bounds of target series (in both X and Y axis)
                     lower_upper_lemire(X_t, len_T, r, lb_t_x, ub_t_x);
                     lower_upper_lemire(Y_t, len_T, r, lb_t_y, ub_t_y);
 
@@ -736,41 +732,23 @@ int main(  int argc , char *argv[] )
                     else keogh2c++;
                 }
                 else keogh1c++;
-            } 
+            }
 
         }
-
         //free(loc);
-        
-        scanned++; 
+
+        scanned++;
     }
-    /*free(lb_q_x);
+    free(lb_q_x);
     free(lb_q_y);
-    free(ub_q_x); 
+    free(ub_q_x);
     free(ub_q_y);
     free(lb_t_x);
     free(lb_t_y);
     free(ub_t_x);
-    free(ub_t_y);*/
+    free(ub_t_y);
 
-    
-    string outFilePath("./CdtwOutput/");
-    string outFileK(argv[6]);
-    string outFileId(argv[3]);
-    string tag(argv[8]);
-    string underline("_");
-    int pos = outFileId.rfind('.');
-
-    outFilePath = outFilePath + tag + underline + outFileId.substr(0,pos) + underline + outFileK ;
-    if (isStd) {
-        string string_std("std");
-        outFilePath = outFilePath + underline + string_std + outFileId.substr(pos);
-    }
-    else {
-        outFilePath += outFileId.substr(pos);
-    }
-    /*
-    string outFilePath("./CdtwOutput/");
+    string outFilePath("./ResultsOfDTW/");
     string outFileK(argv[6]);
     string outFileId(argv[3]);
     string underline("_");
@@ -784,15 +762,15 @@ int main(  int argc , char *argv[] )
     else {
         outFilePath += outFileId.substr(pos);
     }
-    */
+
     FILE* op = fopen(outFilePath.c_str(), "w");
     if (op == NULL)
         error(2);
 
-    if (topK < 1){
+    if (topK < 1) {
         // Sort Part
         qsort(Q_tmp, scanned, sizeof(Index), comp);
-        
+
         // Save Part
         fprintf(op, "tazid,dist\n");
         for (i = 0; i < scanned; i++) {
@@ -803,17 +781,17 @@ int main(  int argc , char *argv[] )
         Q_tmp = (Index*)malloc(sizeof(Index) * topK);
 
         IndexDTW* temp = topkdtw;
-        i = 0; 
+        i = 0;
         while (topkdtw) {
-            Q_tmp[i].index = topkdtw->index; 
+            Q_tmp[i].index = topkdtw->index;
             Q_tmp[i].value = sqrt(topkdtw->dist);
             topkdtw = topkdtw->next;
-            i++; 
+            i++;
         }
-        
+
         fprintf(op, "tazid,dist\n");
         while (i > 0) {
-            i--; 
+            i--;
             fprintf(op, "%d,%lf\n", Q_tmp[i].index, Q_tmp[i].value);
         }
         free(temp);
@@ -824,7 +802,7 @@ int main(  int argc , char *argv[] )
     fclose(fp);
 
     free(Q_tmp);
-    
+
     free(X_q);
     free(Y_q);
     free(X_t);
