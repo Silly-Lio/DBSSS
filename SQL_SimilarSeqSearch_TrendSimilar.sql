@@ -19,7 +19,7 @@ WITH traj_cp AS ( -- 1. Add columns of TABLE <traj_cp> to the target dataset. TA
 	    WHERE pt.tazid = {target_tazid}
      ), 
      
-     table_area AS ( -- Filter1. Areal difference
+     table_area AS ( -- Filter1: Areal difference
 	    SELECT taz_std.tazid, taz_std.geom, ABS(st_area(st_envelope(taz_std.geom))- st_area(st_envelope(target_std.geom))) AS diff_area
 	    FROM taz_std
 	    CROSS JOIN target_std
@@ -27,7 +27,7 @@ WITH traj_cp AS ( -- 1. Add columns of TABLE <traj_cp> to the target dataset. TA
 	    LIMIT {k*2}
      ),
      
-     table_f_dist AS ( -- Filter2. Frechet Distance
+     table_f_dist AS ( -- Filter2: Frechet Distance
 	    SELECT table_area.tazid, table_area.geom
 	    FROM table_area
 	    CROSS JOIN target_std
